@@ -1,5 +1,6 @@
 /* Servo_motor_tester.ino
-
+ *
+ * bav 20240822 Added sweep capability with a toggle switch.
  * bav 20240821 Want to combine sweep capabiltiy with pot input. 
   * Code copied here for reference.
 #include <Servo.h>
@@ -35,8 +36,9 @@ void loop() {
 
 Servo servo;
 
-#define testerPotInput A1 // attiny85 pin 7; ADC1
-#define servoPWMOutput 0 // D0, attiny85 pin 5; PWM0
+#define testerPotInputPin A1  // attiny85 pin 7; ADC1
+#define servoPWMOutputPin 0   // D0, attiny85 pin 5; PWM0
+#define modePotOrSweepPin 1   // D1, attiny85 pin 6;
 // attiny85 pins 2,3; D3,D4; reserved for USB+ and USB-
 //          pin 1 reset / pin 8 VCC / pin 4 Gnd / pin 6 D1 unused.
 //          Could use pin 6 for toggle switch to use pot or sweep servo.
@@ -44,11 +46,35 @@ Servo servo;
 
 void setup() {
   Serial.begin(9600);
-  servo.attach(servoPWMOutput);
+  servo.attach(servoPWMOutputPin);
 }
 void loop() {
-  int value = analogRead(testerPotInput); // Pot values ccw 0; cw 1023
-  value = map(value, 0, 1024, 0, 180); // Servo class can accept input degrees. Check documentation.
+  static int value = 0;
+
+  // Mode potentiometer input
+  if (modePotOrSweepPin) {
+
+    value = analogRead(testerPotInputPin);  // Pot values ccw 0; cw 1023
+    value = map(value, 0, 1024, 0, 180);    // Servo class can accept input degrees. Check documentation.
+  
+  // Mode auto sweep input
+  } else {                                  
+    static bool cntUp = true;
+    if (cntUp && value < 180) {
+      value++;
+    } else if (cntUp) {
+      cntUp = false;
+      value--;
+    } else if (!cntUp && 0 < value) {
+      value--;
+    } else if (!cntUp) {
+      cntUp = true;
+      value++;
+    }
+  }
+
   Serial.println(value);
   servo.write(value);
+  delay(18);  // RC frame rate is 50Hz or 20 millisecs approximately.
+              // Max pulse duration is 2 msec. So 20 - 2 = ~18 msec.
 }
