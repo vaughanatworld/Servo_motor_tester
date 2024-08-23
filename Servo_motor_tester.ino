@@ -46,18 +46,24 @@ Servo servo;
 
 void setup() {
   Serial.begin(9600);
-  servo.attach(servoPWMOutputPin);
+  // Default servo class: pwm timing: min 544 usec  to max 2400 usec
+  // Initially I want the standard 1000usec to 2000usec
+  //servo.attach(servoPWMOutputPin); 
+  servo.attach(servoPWMOutputPin, 1000, 2000);
 }
 void loop() {
-  static int value = 0;
+  static int value = 90; // Servo mid point in degrees.
 
   // Mode potentiometer input
   if (modePotOrSweepPin) {
 
     value = analogRead(testerPotInputPin);  // Pot values ccw 0; cw 1023
-    value = map(value, 0, 1024, 0, 180);    // Servo class can accept input degrees. Check documentation.
+    value = map(value, 0, 1023, 0, 180);    // Servo class accepts input degrees.
+                                            // Check documentation for writeMicroseconds()
   
   // Mode auto sweep input
+  // To speed up or slow down the sweep, mess with the increments and decrements here.
+  // Don't mess with delay(). It belongs to the RC frame rate of 50Hz
   } else {                                  
     static bool cntUp = true;
     if (cntUp && value < 180) {
